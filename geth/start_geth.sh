@@ -115,7 +115,7 @@ _STATICNODES="${_CLUSTERDIR}/static-nodes.json"
 _NODENAME="Geth-Cluster${_CLUSTERID}-Node${_NODEID}"
 _LOGFILE="${_NODENAME}.log"
 _IPCIDR="$(ip addr show ${_INTERFACE} | grep 'inet ' | sed -e 's#^.*inet ##g' -e 's# brd .*##g')"
-[ "${geth_netrestrict}" == "" ] && geth_netrestrict="$(echo ${_IPCIDR} | sed -e 's#[0-9]\{1,3\}\.[0-9]\{1,3\}/..#0.0/16#g')"
+[ "${geth_netrestrict}" == "" ] && geth_netrestrict="${_IPCIDR}"
 [ "${geth_rpcaddr}" == "" ] && geth_rpcaddr="$(echo ${_IPCIDR} | sed -e 's#/.*##g')"
 STATICLOCAL="${geth_datadir}/static-nodes.json"
 
