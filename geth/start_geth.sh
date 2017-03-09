@@ -5,6 +5,8 @@ _BASENAME="$(basename $0)"
 _DIRNAME="$(dirname $0)"
 _ALLARGS="$@"
 
+[ ! -O "${0}" ] && echo "[${_BASENAME}] ERROR: Only owner of this script can execute it" && exit 1
+
 # common regex
 positive_percentage='^[1-9][0-9]{0,1}$'
 single_digit='^[0-9]$'
