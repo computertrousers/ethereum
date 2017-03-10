@@ -13,7 +13,7 @@ chown geth:ether ${_DIRNAME}
 chown geth:ether ${_DIRNAME}/*
 chmod 2755 ${_DIRNAME}
 
-chown root:ubuntu $0
+chown root:root $0
 chmod 540 $0
 
 apt-get -y install software-properties-common
