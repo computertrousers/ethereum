@@ -7,7 +7,7 @@ _DIRNAME=$(dirname $0)
 [[ $EUID -ne 0 ]] && echo "[${_BASENAME}] ERROR: Only root can execute this script" && exit 1
 
 [ $(getent group ether) ] || addgroup ether -gid 1111
-[ $(getent passwd geth) ] || useradd -b /home -m -N -g ether -u 2221 geth
+[ $(getent passwd geth) ] || useradd -b /home -m -N -g ether -u 3333 geth
 
 chown geth:ether ${_DIRNAME}
 chown geth:ether ${_DIRNAME}/*
