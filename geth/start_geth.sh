@@ -138,6 +138,7 @@ if [ "$geth_commands" = "init" ]; then
 		cp ${_GENESIS} ${_CLUSTERGENESIS}
 		echo "	Copied supplied genesis file [${_GENESIS}] to cluster: [${_CLUSTERGENESIS}]" | tee -a ${_LOGFILE}
 		echo "[" > ${_STATICNODES}
+		echo "]" >> ${_STATICNODES}
 		echo "	Created static nodes file in cluster: [${_STATICNODES}]" | tee -a ${_LOGFILE}
 	fi
 	echo "[${_BASENAME}] Initialising new node: [${geth_datadir}] ..." | tee -a ${_LOGFILE}
@@ -148,8 +149,8 @@ if [ "$geth_commands" = "init" ]; then
 	mkdir -p "$geth_datadir"
 	echo "	Created new node directory: [${geth_datadir}]" | tee -a ${_LOGFILE}
 		
-	ln -s -r -f ${_STATICNODES} ${STATICLOCAL}
-	echo "	Linked local static nodes file [${STATICLOCAL}] to cluster: [${_STATICNODES}]" | tee -a ${_LOGFILE}
+	echo "	Copying cluster static nodes file [${_STATICNODES}] to node file [${STATICLOCAL}] ..." | tee -a ${_LOGFILE}
+	cp -f ${_STATICNODES} ${STATICLOCAL}
 
 	_CMDSTRING="geth ${geth_ethereum_args} ${geth_api_args} ${geth_network_args} ${geth_user_args} --netrestrict ${_IPCIDR} init ${_CLUSTERGENESIS}"
 	echo "	Using cluster level genesis file: [${_CLUSTERGENESIS}]" | tee -a ${_LOGFILE}
