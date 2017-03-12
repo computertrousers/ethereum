@@ -1,0 +1,33 @@
+#!/bin/bash
+
+_BASENAME=$(basename $0)
+_NODEDIR=$(dirname $0)
+_CLUSTERDIR=$(dirname $_NODEDIR)
+_NODEID=$(basename $_NODEDIR)
+_CLUSTERID=$(basename $_CLUSTERDIR)
+_LOGPREFIX="${_CLUSTERID}/${_NODEID}/${_BASENAME}"
+
+[ ! -O "${0}" ] && echo "[${_LOGPREFIX}] ERROR: Only owner of this script can execute it" && exit 1
+
+geth_args=:geth_args:
+geth_port=:geth_port:
+
+[ "${geth_args}" == ":geth_args:" ]  && echo "[${_LOGPREFIX}] ERROR: Can not execute template script" && exit 2
+
+_CLUSTERSTATIC=${_CLUSTERDIR}/static-nodes.json
+_NODESTATIC=${_NODEDIR}/static-nodes.json
+
+echo "[${_LOGPREFIX}] Copying cluster static peers [${_CLUSTERSTATIC}] to node [${_NODESTATIC}], removing reference to self ..."
+cat ${_CLUSTERSTATIC} | grep -v ".*enode://.*:${geth_port}.*" > ${_NODESTATIC}
+
+geth_datadir=$(readlink -f $_NODEDIR)
+geth_log=${geth_datadir}/${_CLUSTERID}-${_NODEID}.log
+
+geth_cmdline="geth --datadir ${geth_datadir} ${geth_args} ${@}"
+
+echo "[${_LOGPREFIX}] Running GETH command ..." | tee -a ${geth_log}
+echo "${geth_cmdline}" | tee -a ${geth_log}
+
+eval "${geth_cmdline} &>> ${geth_log} &" 
+
+echo "[${_LOGPREFIX}] SUCCESS; Geth output available in [${geth_log}]" | tee -a ${geth_log}

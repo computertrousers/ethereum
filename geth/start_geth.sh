@@ -28,27 +28,24 @@ while [[ $# -gt 0 ]]; do
 		-h|--help)
 		echo "USAGE:"
 		echo "	$0 [options] [geth arguments....] "
+		echo ""
 		echo "OPTIONS:"
 		echo "	-c, --clusterid	value	Cluster id, 0-9 (default = ${_CLUSTERID}); numbered directory under ${_DIRNAME}"
 		echo "	-n, --nodeid	value	Node id, 0-99 (default = ${_NODEID}); numbered directory under relevant cluster"
-		echo "	-i, --init		Initialise a new node; will overwrite previous version if it exists; Requires"
-		echo "				genesis file to be supplied (-g option) if first node of a cluster on machine"
-		echo "	-g, --genesis	file	Genesis file to bootstrap a new cluster; ignored if cluster already exists"
 		echo "	-a, --address	label	Network interface to accept incomming connections on (default = ${_INTERFACE})"
 		echo "	-p, --baseport	value	Start of port range for inter-node connection (default = ${_BASEPORT})"
 		echo "	-r, --rpcbase	value	Start of port range for RPC connection (default = ${_RPCBASEPORT})"
-		echo "	-l, --cpulimit	value	Percentage limit (1-100) of CPU for geth to use; requires cpulimit package"
+#		echo "	-l, --cpulimit	value	Percentage limit (1-100) of CPU for geth to use; requires cpulimit package"
+		echo "	-i, --init		Initialise a new node; will overwrite previous version if it exists"
+		echo "	-g, --genesis	file	Genesis file to bootstrap a new cluster; ignored in favour of cluster file if it already exists"
 		echo ""
-		echo "This script will optionally (-i) create a new node along with a new cluster if no nodes have"
-		echo "previously been created.  It will always spin up the node. The ports used are calculated as:"
+		echo "This script will optionally (-i) create a new node along with a the relevant cluster if it does not already exist.  It will then spin up the node using the start.sh script created in the node directory.  The enode string for each new node will be added to a static nodes file in the cluster directory and if existing nodes are restarted they will pick up these changes.  The ports used are calculated as:"
+		echo ""
 		echo "(100 * clusterid) + nodeid + base"
 		echo ""
-		echo "Additional geth arguments can be included anywhere on the command line.  For example, to enable"
-		echo "worldwide RPC access add --netrestrict 0.0.0/0 --rpccorsdomain '*' (or something more prescriptive"
-		echo "if you can!) and if you plan to connect miners to the node you will need to use --etherbase."
+		echo "Additional geth arguments can be included anywhere on the command line.  For example, to enable worldwide RPC access add --netrestrict 0.0.0/0 --rpccorsdomain '*' (or something more prescriptive if you can!) and if you plan to connect miners to the node you will need to set --etherbase."
 		echo ""
-		echo "You may rename any cluster or node directory to add a meaningfull suffix (e.g. cluster-0-test, node-1-master)"
-		echo "but be sure to leave the prefix unchanged."
+		echo "You may rename any cluster or node directory to add a meaningfull suffix (e.g. cluster-0-test, node-1-master) but be sure to leave the prefix unchanged."
 		exit 1
 		;;
 		-i|--init)
@@ -114,14 +111,14 @@ geth_datadir=${geth_datadir:=${_CLUSTERDIR}/node-${_NODEID}}
 _CLUSTERGENESIS="${_CLUSTERDIR}/genesis.json"
 _STATICNODES="${_CLUSTERDIR}/static-nodes.json"
 
-_NODENAME="Geth-Cluster${_CLUSTERID}-Node${_NODEID}"
+_NODENAME="cluster-${_CLUSTERID}-node-${_NODEID}"
 _LOGFILE="${_NODENAME}.log"
 _IPCIDR="$(ip addr show ${_INTERFACE} | grep 'inet ' | sed -e 's#^.*inet ##g' -e 's# brd .*##g')"
 [ "${geth_netrestrict}" == "" ] && geth_netrestrict="${_IPCIDR}"
 [ "${geth_rpcaddr}" == "" ] && geth_rpcaddr="$(echo ${_IPCIDR} | sed -e 's#/.*##g')"
 STATICLOCAL="${geth_datadir}/static-nodes.json"
 
-geth_ethereum_args="--datadir ${geth_datadir} --networkid ${geth_networkid} --identity ${_NODENAME}"
+geth_ethereum_args="--networkid ${geth_networkid} --identity ${_NODENAME}"
 geth_api_args="--rpc --rpcaddr ${geth_rpcaddr} --rpcport ${geth_rpcport} --rpcapi db,eth,net,web3 --ipcapi admin,db,eth,debug,miner,net,shh,txpool,personal,web3"
 geth_network_args="--nodiscover --port ${geth_port}"
 geth_security_args="--netrestrict ${geth_netrestrict} -nat any"
@@ -143,22 +140,39 @@ if [ "$geth_commands" = "init" ]; then
 	fi
 	echo "[${_BASENAME}] Initialising new node: [${geth_datadir}] ..." | tee -a ${_LOGFILE}
 	if [ -d "$geth_datadir" ]; then
-		echo "	Found existing copy of node [${geth_datadir}]; deleting ...]" | tee -a ${_LOGFILE}
+		echo "	Found existing copy of node [${geth_datadir}]; deleting ..." | tee -a ${_LOGFILE}
 		rm -rf "${geth_datadir}"
 	fi
 	mkdir -p "$geth_datadir"
 	echo "	Created new node directory: [${geth_datadir}]" | tee -a ${_LOGFILE}
 		
-	echo "	Copying cluster static nodes file [${_STATICNODES}] to node file [${STATICLOCAL}] ..." | tee -a ${_LOGFILE}
-	cp -f ${_STATICNODES} ${STATICLOCAL}
-
-	_CMDSTRING="geth ${geth_ethereum_args} ${geth_api_args} ${geth_network_args} ${geth_user_args} --netrestrict ${_IPCIDR} init ${_CLUSTERGENESIS}"
+	_CMDSTRING="geth --datadir ${geth_datadir} ${geth_ethereum_args} ${geth_api_args} ${geth_network_args} ${geth_user_args} --netrestrict ${_IPCIDR} init ${_CLUSTERGENESIS}"
 	echo "	Using cluster level genesis file: [${_CLUSTERGENESIS}]" | tee -a ${_LOGFILE}
 	echo "	Running geth command ..." | tee -a ${_LOGFILE}
 	echo "${_CMDSTRING}" | tee -a ${_LOGFILE}
 	if ! (${_CMDSTRING}); then
 		echo "[${_BASENAME}] ERROR: command did not exit cleanly: [${_CMDSTRING}]; you may need to remove the cluster genesis file to fix: [${_CLUSTERGENESIS}]" | tee -a ${_LOGFILE}
 		exit 2
+	fi
+
+	_CMDSTRING="geth --verbosity 0 --exec admin.nodeInfo --datadir ${geth_datadir} ${geth_ethereum_args} ${geth_network_args} --netrestrict ${_IPCIDR} console"
+	echo "[${_BASENAME}] Running transient geth console [${_CMDSTRING}] to discover enode string ..." | tee -a ${_LOGFILE}
+	ENODE=$( $_CMDSTRING | grep "enode://" | sed -e "s#.*enode://#enode://##g" -e "s#\[::\]#${geth_rpcaddr}#g" -e "s#[\",]*##g")
+	if [ "${ENODE}" == "" ]; then
+		echo "[${_BASENAME}] ERROR: Cannot establish enode of [${_NODENAME}]" | tee -a ${_LOGFILE}
+		exit 10
+	else
+		if grep -q "enode://.*:${geth_port}" "${_STATICNODES}"; then
+			echo "[${_BASENAME}] Removing existing enode entry for this node from static nodes file: [${_STATICNODES}] ..." | tee -a ${_LOGFILE}
+			sed -i "s#enode://.*:${geth_port}#NEWNODE#g" ${_STATICNODES}
+		else
+			sed -i "s#]##g" ${_STATICNODES} 
+			grep -Fq "enode://" "${_STATICNODES}" && echo -n ", " >> ${_STATICNODES}
+			echo "\"NEWNODE\"" >> ${_STATICNODES}
+			echo "]" >> ${_STATICNODES}
+		fi
+		echo "[${_BASENAME}] Adding enode [${ENODE}] to static nodes file: [${_STATICNODES}] ..." | tee -a ${_LOGFILE}
+		sed -i "s#NEWNODE#${ENODE}#g" ${_STATICNODES}
 	fi
 fi
 
@@ -167,34 +181,17 @@ if [ ! -d "$geth_datadir" ]; then
 	echo "	${0} ${_ALLARGS} -i" | tee -a ${_LOGFILE}
 	exit 3;
 fi
+
 echo "[${_BASENAME}] Found matching node in [${geth_datadir}]; continuing ..." | tee -a ${_LOGFILE}
 
 _OLDLOGFILE=${_LOGFILE}
 _LOGFILE="${geth_datadir}/${_NODENAME}.log"
 mv -f ${_OLDLOGFILE} ${_LOGFILE}
 
-_CMDSTRING="geth --verbosity 0 --exec admin.nodeInfo ${geth_ethereum_args} ${geth_network_args} --netrestrict ${_IPCIDR} console"
-echo "[${_BASENAME}] Running transient geth console [${_CMDSTRING}] to discover enode string ..." | tee -a ${_LOGFILE}
-ENODE=$( $_CMDSTRING | grep "enode://" | sed -e "s#.*enode://#enode://##g" -e "s#\[::\]#${geth_rpcaddr}#g" -e "s#[\",]*##g")
-if [ "${ENODE}" == "" ]; then
-	echo "[${_BASENAME}] ERROR: Cannot establish enode of [${_NODENAME}]" | tee -a ${_LOGFILE}
-	exit 10
-else
-	if grep -Fq "${ENODE}" "${_STATICNODES}"; then
-		echo "[${_BASENAME}] Found existing enode [${ENODE}] in static nodes file: [${_STATICNODES}]; nothing more to do" | tee -a ${_LOGFILE}
-	else
-		echo "[${_BASENAME}] Adding enode [${ENODE}] to static nodes file: [${_STATICNODES}] ..." | tee -a ${_LOGFILE}
-		sed -i "s#]##g" ${_STATICNODES} 
-		grep -Fq "enode://" "${_STATICNODES}" && echo "," >> ${_STATICNODES}
-		echo "\"${ENODE}\"" >> ${_STATICNODES}
-		echo "]" >> ${_STATICNODES}
-	fi
-fi
+geth_args="${geth_ethereum_args} ${geth_api_args} ${geth_network_args} ${geth_security_args} ${geth_user_args}"
+cat ${_DIRNAME}/template/start.template | sed -e "s#=:geth_args:#=\"${geth_args}\"#g" -e "s#=:geth_port:#=${geth_port}#g" > ${geth_datadir}/start.sh
+chmod +x ${geth_datadir}/start.sh
 
-_CMDSTRING="geth ${geth_ethereum_args} ${geth_api_args} ${geth_network_args} ${geth_security_args} ${geth_user_args} &>> ${_LOGFILE} &"
-echo "[${_BASENAME}] Running GETH command ..." | tee -a ${_LOGFILE}
-echo "${_CMDSTRING}" | tee -a ${_LOGFILE}
+exec ${geth_datadir}/start.sh
 
-eval "$_CMDSTRING" 
 
-echo "[${_BASENAME}] SUCCESS; Geth output available in [$_LOGFILE]"
