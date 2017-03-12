@@ -119,7 +119,8 @@ _IPCIDR="$(ip addr show ${_INTERFACE} | grep 'inet ' | sed -e 's#^.*inet ##g' -e
 STATICLOCAL="${geth_datadir}/static-nodes.json"
 
 geth_ethereum_args="--networkid ${geth_networkid} --identity ${_NODENAME}"
-geth_api_args="--rpc --rpcaddr ${geth_rpcaddr} --rpcport ${geth_rpcport} --rpcapi db,eth,net,web3 --ipcapi admin,db,eth,debug,miner,net,shh,txpool,personal,web3"
+#geth_api_args="--rpc --rpcaddr ${geth_rpcaddr} --rpcport ${geth_rpcport} --rpcapi db,eth,net,web3 --ipcapi admin,db,eth,debug,miner,net,shh,txpool,personal,web3"
+geth_api_args="--rpc --rpcaddr ${geth_rpcaddr} --rpcport ${geth_rpcport}"
 geth_network_args="--nodiscover --port ${geth_port}"
 geth_security_args="--netrestrict ${geth_netrestrict} -nat any"
 
@@ -182,7 +183,7 @@ if [ ! -d "$geth_datadir" ]; then
 	exit 3;
 fi
 
-echo "[${_BASENAME}] Found matching node in [${geth_datadir}]; continuing ..." | tee -a ${_LOGFILE}
+echo "[${_BASENAME}] Found matching node in [${geth_datadir}]; running its start script ..." | tee -a ${_LOGFILE}
 
 _OLDLOGFILE=${_LOGFILE}
 _LOGFILE="${geth_datadir}/${_NODENAME}.log"
