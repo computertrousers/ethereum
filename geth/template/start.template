@@ -14,6 +14,8 @@ geth_port=:geth_port:
 
 [ "${geth_args}" == ":geth_args:" ]  && echo "[${_LOGPREFIX}] ERROR: Can not execute template script" && exit 2
 
+geth_datadir=$(readlink -f $_NODEDIR)
+
 _PID=$(ps -ef | grep "[d]atadir ${geth_datadir}" | awk '{print $2}')
 [ "${_PID}" != "" ] && echo "[${_LOGPREFIX}] ERROR: This node appears to be running already as PID: [${_PID}]" && exit 3
 
@@ -23,7 +25,6 @@ _NODESTATIC=${_NODEDIR}/static-nodes.json
 echo "[${_LOGPREFIX}] Copying cluster static peers [${_CLUSTERSTATIC}] to node [${_NODESTATIC}], removing reference to self ..."
 cat ${_CLUSTERSTATIC} | grep -v ".*enode://.*:${geth_port}.*" > ${_NODESTATIC}
 
-geth_datadir=$(readlink -f $_NODEDIR)
 geth_log=${geth_datadir}/${_CLUSTERID}-${_NODEID}.log
 
 geth_cmdline="geth --datadir ${geth_datadir} ${geth_args} ${@}"
