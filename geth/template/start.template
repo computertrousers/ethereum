@@ -26,7 +26,7 @@ _NODESTATIC=${_NODEDIR}/static-nodes.json
 echo "[${_LOGPREFIX}] Copying cluster static peers [${_CLUSTERSTATIC}] to node [${_NODESTATIC}], removing reference to self ..."
 cat ${_CLUSTERSTATIC} | grep -v ".*enode://.*:${geth_port}.*" > ${_NODESTATIC}
 
-geth_log=${geth_datadir}/${_CLUSTERID}-${_NODEID}.log
+geth_log=${geth_datadir}/geth.log
 
 geth_cmdline="geth --datadir ${geth_datadir} ${geth_args} ${@}"
 
