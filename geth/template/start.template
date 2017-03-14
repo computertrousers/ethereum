@@ -1,7 +1,8 @@
 #!/bin/bash
 
 _BASENAME=$(basename $0)
-_NODEDIR=$(dirname $0)
+_DIRNAME=$(dirname $0)
+_NODEDIR=$(readlink -f $_DIRNAME)
 _CLUSTERDIR=$(dirname $_NODEDIR)
 _NODEID=$(basename $_NODEDIR)
 _CLUSTERID=$(basename $_CLUSTERDIR)
