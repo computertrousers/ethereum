@@ -127,7 +127,7 @@ geth_security_args="--netrestrict ${geth_netrestrict} -nat any"
 echo "[${_BASENAME}] Running with args: [${_ALLARGS}]" | tee ${_LOGFILE}
 if [ "$geth_commands" = "init" ]; then
 	if [ ! -d "${_CLUSTERDIR}" ]; then
-		echo "${_BASENAME}] Cluster directory[${_CLUSTERDIR}] does not exist; creating ..." | tee -a ${_LOGFILE}
+		echo "[${_BASENAME}] Cluster directory[${_CLUSTERDIR}] does not exist; creating ..." | tee -a ${_LOGFILE}
 		if [ "${_GENESIS}" == "" ]; then
 			echo "[${_BASENAME}] ERROR: Genesis file rquired for new cluster; re-run command with -g parameter" | tee -a ${_LOGFILE}
 			exit 1
