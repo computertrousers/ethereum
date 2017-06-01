@@ -3,15 +3,19 @@ set -e
 
 _BASENAME=$(basename $0)
 _DIRNAME=$(dirname $0)
+_FULLPATH=$(readlink -f $_DIRNAME)
 
 [[ $EUID -ne 0 ]] && echo "[${_BASENAME}] ERROR: Only root can execute this script" && exit 1
 
 [ $(getent group ether) ] || addgroup ether -gid 1111
 [ $(getent passwd ethminer) ] || useradd -b /home -m -N -g ether -u 2222 ethminer
 
-chown ethminer:ether ${_DIRNAME}
-chown ethminer:ether ${_DIRNAME}/*
-chmod 2755 ${_DIRNAME}
+mkdir ${_FULLPATH}/.ethash
+ln -s ${_FULLPATH}/.ethash ~ethminer/.ethash
+chown ethminer:ether ${_FULLPATH}
+chown ethminer:ether ${_FULLPATH}/*
+chown ethminer:ether ${_FULLPATH}/.*
+chmod 2755 ${_FULLPATH}
 
 chown root:root $0
 chmod 540 $0
