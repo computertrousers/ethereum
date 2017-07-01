@@ -17,7 +17,7 @@ fi
 mkdir -p ${_LOGBASE}
 chmod g+w ${_LOGBASE}
 
-_CMD_EXTRA="--no-precompute --farm-recheck 1000"
+_CMD_EXTRA="--farm-recheck 1000"
 _CPUTHREADS=$(($(cat /proc/cpuinfo | grep "^processor" | tail -5 | head -2 | tail -1 | sed -e "s#proc.*:.##g") + 1))
 
 _CMD="-F ${_MASTER} --disable-submit-hashrate"
