@@ -18,7 +18,6 @@ _CLUSTERID=0
 _NODEID=0
 _RPCBASEPORT=3000
 _BASEPORT=4000
-_INTERFACE=eth0
 cpulimit_limit=
 geth_commands=
 
@@ -32,7 +31,7 @@ while [[ $# -gt 0 ]]; do
 		echo "OPTIONS:"
 		echo "	-c, --clusterid	value	Cluster id, 0-9 (default = ${_CLUSTERID}); numbered directory under ${_DIRNAME}"
 		echo "	-n, --nodeid	value	Node id, 0-99 (default = ${_NODEID}); numbered directory under relevant cluster"
-		echo "	-a, --address	label	Network interface to accept incomming connections on (default = ${_INTERFACE})"
+		echo "	-a, --address	label	Network interface to accept incomming connections on (default = first non loopback)"
 		echo "	-p, --baseport	value	Start of port range for inter-node connection (default = ${_BASEPORT})"
 		echo "	-r, --rpcbase	value	Start of port range for RPC connection (default = ${_RPCBASEPORT})"
 #		echo "	-l, --cpulimit	value	Percentage limit (1-100) of CPU for geth to use; requires cpulimit package"
@@ -113,7 +112,7 @@ _STATICNODES="${_CLUSTERDIR}/static-nodes.json"
 
 _NODENAME="cluster-${_CLUSTERID}-node-${_NODEID}"
 _LOGFILE="${_NODENAME}.log"
-_IPCIDR="$(ip addr show ${_INTERFACE} | grep 'inet ' | sed -e 's#^.*inet ##g' -e 's# brd .*##g')"
+_IPCIDR="$(ip addr show ${_INTERFACE} | grep -v "inet 127.0.0.1" | grep 'inet ' | sed -e 's#^.*inet ##g' -e 's# brd .*##g')"
 [ "${geth_netrestrict}" == "" ] && geth_netrestrict="${_IPCIDR}"
 [ "${geth_rpcaddr}" == "" ] && geth_rpcaddr="$(echo ${_IPCIDR} | sed -e 's#/.*##g')"
 STATICLOCAL="${geth_datadir}/static-nodes.json"
@@ -189,7 +188,7 @@ _OLDLOGFILE=${_LOGFILE}
 _LOGFILE="${geth_datadir}/${_NODENAME}.log"
 mv -f ${_OLDLOGFILE} ${_LOGFILE}
 
-geth_args="${geth_ethereum_args} ${geth_api_args} ${geth_network_args} ${geth_security_args} ${geth_user_args}"
+geth_args="--vmodule core/tx_pool.go=5 ${geth_ethereum_args} ${geth_api_args} ${geth_network_args} ${geth_security_args} ${geth_user_args}"
 cat ${_DIRNAME}/template/start.template | sed -e "s#=:geth_args:#=\"${geth_args}\"#g" -e "s#=:geth_port:#=${geth_port}#g" > ${geth_datadir}/start.sh
 chmod +x ${geth_datadir}/start.sh
 

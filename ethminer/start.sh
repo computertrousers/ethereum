@@ -4,7 +4,7 @@ _BASENAME=$(basename $0)
 
 [ ! -O "${0}" ] && echo "[${_BASENAME}] ERROR: Only owner of this script can execute it" && exit 1
 
-_IP=$(ip addr show eth0 | grep 'inet ' | sed -e 's#^.*inet ##g' -e 's#/.*##g')
+_IP=$(ip addr show | grep -v 'inet 127.0.0.1' | grep 'inet ' | sed -e 's#^.*inet ##g' -e 's#/.*##g')
 _MASTER=http://${_IP}:3009
 
 positive_percentage='^[1-9][0-9]{0,1}$'
@@ -64,4 +64,6 @@ if [ "$_CPULIMIT" != "" ]; then
 	echo "[${_BASENAME}][INFO] Limiting CPU usage to ${_CPULIMIT}% ..." | tee ${_LOGBASE}/${_PIDC}_${_LOGFILEC}
 	cpulimit -l ${_CPULIMIT} -b -p ${_PIDC}
 fi
+echo "[${_BASENAME}] Logfile: [${_LOGBASE}/${_PIDC}_${_LOGFILEC}]"
+
 exit 0
