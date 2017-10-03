@@ -19,11 +19,17 @@ while [[ $# -gt 0 ]]; do
                 echo "OPTIONS:"
 		echo "  -F,--farm <url>    Put into mining farm mode with the work server at URL (default: ${_MASTER})"
                 echo "  -l, --cpulimit <n> Percentage limit (1-100) of CPU for ethminer to use; requires cpulimit package"
+                echo "  -t, --turbo <file> Will monitor logfile for transactions and temporarily remove cpulimit when they occur"
                 echo "  -h, --help         This message"
                 exit 1
                 ;;
                 -F|--farm)
                 _MASTER="$2"
+                shift
+                ;;
+                -t|--turbo)
+		_TURBOLOG=$2
+		! [ -r $_TURBOLOG ] && echo "[${_BASENAME}] ERROR: --turbo log file not readable: [${_TURBOLOG}]" && exit 1
                 shift
                 ;;
                 -l|--cpulimit)
@@ -65,5 +71,9 @@ if [ "$_CPULIMIT" != "" ]; then
 	cpulimit -l ${_CPULIMIT} -b -p ${_PIDC}
 fi
 echo "[${_BASENAME}] Logfile: [${_LOGBASE}/${_PIDC}_${_LOGFILEC}]"
+
+if [ "${_TURBOLOG}" != "" ]; then
+	${_DIRNAME}/turbo.sh ${_PIDC} ${_TURBOLOG}
+fi
 
 exit 0
